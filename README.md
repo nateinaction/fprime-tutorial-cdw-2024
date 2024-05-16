@@ -4,4 +4,4 @@ This project follows the [LED Blinker tutorial](https://fprime-community.github.
 
 For Apple Silicon users you can build the arm64 linux binary by:
 1. Copy the `Dockerfile` and `.dockerignore` files from this repo to the root of your LED tutorial projects
-1. Run `docker build --output=build-artifacts/Linux/LedBlinker/bin .`
+1. Run `docker build --output=. build-artifacts-docker`
