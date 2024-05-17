@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS builder
+FROM --platform=$BUILDPLATFORM ubuntu:20.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update && \
@@ -12,6 +12,14 @@ RUN apt update && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 
+# download the arm toolchains
+ENV ARM_TOOLS_VERSION=11.2-2022.02
+RUN mkdir -p /opt/toolchains/x86_64-to-arm64 && \
+	curl -Ls https://developer.arm.com/-/media/Files/downloads/gnu-a/$ARM_TOOLS_VERSION/binrel/gcc-arm-$ARM_TOOLS_VERSION-x86_64-aarch64-none-linux-gnu.tar.xz | tar -JC /opt/toolchains/amd64-to-arm64 --strip-components=1 -x && \
+	mkdir -p /opt/toolchains/x86_64-to-arm && \
+	curl -Ls https://developer.arm.com/-/media/Files/downloads/gnu-a/$ARM_TOOLS_VERSION/binrel/gcc-arm-$ARM_TOOLS_VERSION-x86_64-arm-none-linux-gnueabihf.tar.xz | tar -JC /opt/toolchains/amd64-to-arm --strip-components=1 -x && \
+	mkdir -p /opt/toolchains/arm64-to-arm && \
+	curl -Ls https://developer.arm.com/-/media/Files/downloads/gnu/$ARM_TOOLS_VERSION/binrel/gcc-arm-$ARM_TOOLS_VERSION-aarch64-arm-none-linux-gnueabihf.tar.xz | tar -JC /opt/toolchains/arm64-to-arm --strip-components=1 -x
 
 # download the arm toolchain if necessary
 ENV ARM_TOOLS_VERSION=11.2-2022.02
@@ -44,19 +52,16 @@ RUN . /opt/venv/bin/activate && \
 COPY . /workspace
 WORKDIR /workspace
 RUN . /opt/venv/bin/activate && \
-	if [ -d /opt/toolchains ]; then \
-		export ARM_TOOLS_PATH=/opt/toolchains; \
+	if [ "$(dpkg --print-architecture)" != "$TARGETARCH" ]; then \
+		export ARM_TOOLS_PATH="/opt/toolchains/$(dpkg --print-architecture)-to-$TARGETARCH"; \
+		if [ $TARGETARCH = "arm64"]; then \
+			export FPRIME_BUILD_TARGET=aarch64-linux; \
+		elif [ $TARGETARCH = "arm"]; then \
+			export FPRIME_BUILD_TARGET=arm-hf-linux; \
+		fi; \
 	fi && \
-	if [ "$(dpkg --print-architecture)" = "amd64" ] && [ $TARGETARCH = "arm64"]; then \
-		fprime-util generate aarch64-linux && \
-		fprime-util build aarch64-linux; \
-	elif [ $TARGETARCH = "arm"]; then \
-		fprime-util generate arm-hf-linux && \
-		fprime-util build arm-hf-linux; \
-	else \
-		fprime-util generate && \
-		fprime-util build; \
-	fi
+	fprime-util generate $FPRIME_BUILD_TARGET && \
+	fprime-util build $FPRIME_BUILD_TARGET 
 
 FROM scratch
 
