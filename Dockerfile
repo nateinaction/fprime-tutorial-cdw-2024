@@ -28,8 +28,6 @@ RUN mkdir -p /opt/toolchains && \
 	curl -Ls "https://developer.arm.com/-/media/Files/downloads/gnu/$ARM_TOOLS_VERSION/binrel/gcc-arm-$ARM_TOOLS_VERSION-aarch64-arm-none-linux-gnueabihf.tar.xz" | tar -JC /opt/toolchains --strip-components=1 -x
 
 FROM --platform=$BUILDPLATFORM ubuntu:20.04 AS builder
-ARG BUILDARCH
-ARG TARGETARCH
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update && \
@@ -55,8 +53,10 @@ COPY --from=arm64-to-arm /opt/toolchains /opt/toolchains/arm64-to-arm
 # build the project
 COPY . /workspace
 WORKDIR /workspace
+ARG BUILDARCH
+ARG TARGETARCH
 RUN . /opt/venv/bin/activate && \
-	if [ "$BUILDARCH" != "$TARGETARCH" ]; then \
+	if [ -n "$TARGETARCH" ] && [ "$BUILDARCH" != "$TARGETARCH" ]; then \
 		export ARM_TOOLS_PATH="/opt/toolchains/$BUILDARCH-to-$TARGETARCH"; \
 		if [ "$TARGETARCH" = "arm64" ]; then \
 			export FPRIME_BUILD_TARGET=aarch64-linux; \
