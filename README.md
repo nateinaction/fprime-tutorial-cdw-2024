@@ -12,7 +12,7 @@ This repository contains a [Dockerfile](Dockerfile) that can build linux arm and
 1. Pull the fprime submodule `git submodule update --init --recursive`
 1. Create a python venv `python3 -m venv fprime-venv`
 1. Activate the venv `. fprime-venv/bin/activate`
-1. Install required packages `pip install -r fprime-venv/requirements.txt`
+1. Install required packages `pip install -r fprime/requirements.txt`
 
 ### Building the linux/arm or linux/arm64 binary
 
